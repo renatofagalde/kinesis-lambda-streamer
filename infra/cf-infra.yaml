@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Metadata:
+    Generator: "former2"
+Description: ""
+Resources:
+    S3Bucket:
+        Type: "AWS::S3::Bucket"
+        Properties:
+            BucketName: !Sub "${KinesisStream}44"
+            BucketEncryption: 
+                ServerSideEncryptionConfiguration: 
+                  - 
+                    ServerSideEncryptionByDefault: 
+                        SSEAlgorithm: "AES256"
+                    BucketKeyEnabled: true
+            OwnershipControls: 
+                Rules: 
+                  - 
+                    ObjectOwnership: "BucketOwnerEnforced"
+            PublicAccessBlockConfiguration: 
+                BlockPublicAcls: true
+                BlockPublicPolicy: true
+                IgnorePublicAcls: true
+                RestrictPublicBuckets: true
+
+    LambdaFunction:
+        Type: "AWS::Lambda::Function"
+        Properties:
+            Description: ""
+            FunctionName: "kinesis02"
+            Handler: "index.handler"
+            Architectures: 
+              - "x86_64"
+            Code: 
+                S3Bucket: "prod-iad-c1-djusa-tasks"
+                S3Key: !Sub "/snapshots/${AWS::AccountId}/kinesis02-4dccf044-8eb2-4928-8ab6-72cb25863acb"
+                S3ObjectVersion: "ak9OgrfKGZ8_XKCiMlODa9Ap1HjV74Hj"
+            MemorySize: 128
+            Role: !GetAtt IAMRole.Arn
+            Runtime: "nodejs20.x"
+            Timeout: 3
+            TracingConfig: 
+                Mode: "PassThrough"
+            EphemeralStorage: 
+                Size: 512
+
+    IAMRole:
+        Type: "AWS::IAM::Role"
+        Properties:
+            Path: "/service-role/"
+            RoleName: "consumer-kinesis-role-4xd08doz"
+            AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"lambda.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+            MaxSessionDuration: 3600
+            ManagedPolicyArns: 
+              - !Sub "arn:aws:iam::${AWS::AccountId}:policy/service-role/AWSLambdaBasicExecutionRole-f205c973-3fb4-46d4-ae4b-b1372640a828"
+              - "arn:aws:iam::aws:policy/service-role/AWSLambdaKinesisExecutionRole"
+
+    KinesisStream:
+        Type: "AWS::Kinesis::Stream"
+        Properties:
+            Name: "poc"
+            RetentionPeriodHours: 24
+            StreamEncryption: 
+                EncryptionType: "NONE"
+            ShardCount: 4
+
+
